@@ -2,7 +2,7 @@ import { z } from "zod";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
-import { ModelFamilyValues } from "../../family.js";
+import { inferKimiFamily, ModelFamilyValues } from "../../family.js";
 import type { ExistingModel, SyncProvider, SyncedFullModel, SyncedModel } from "../index.js";
 
 const API_ENDPOINT = "https://openrouter.ai/api/v1/models";
@@ -113,6 +113,9 @@ function modalities(values: string[], fallback: Modality[]): Modality[] {
 }
 
 function inferFamily(model: OpenRouterModel, name: string) {
+  const kimiFamily = inferKimiFamily(model.id, name);
+  if (kimiFamily !== undefined) return kimiFamily;
+
   const target = `${model.id} ${name}`.toLowerCase();
   return [...ModelFamilyValues]
     .sort((a, b) => b.length - a.length)
@@ -286,6 +289,14 @@ function baseModelOverrides(
 function inheritedOverride(value: unknown, inherited: unknown): unknown {
   if (value === undefined) return undefined;
   if (sameInheritedValue(value, inherited)) return undefined;
+  if (isPlainObject(value) && isPlainObject(inherited)) {
+    const overrides = Object.fromEntries(
+      Object.entries(value)
+        .map(([key, item]) => [key, inheritedOverride(item, inherited[key])])
+        .filter(([, item]) => item !== undefined),
+    );
+    return Object.keys(overrides).length > 0 ? overrides : undefined;
+  }
   return stripUndefined(value);
 }
 

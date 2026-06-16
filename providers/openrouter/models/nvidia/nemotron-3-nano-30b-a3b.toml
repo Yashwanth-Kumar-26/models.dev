@@ -1,10 +1,10 @@
 base_model = "nvidia/nemotron-3-nano-30b-a3b"
-structured_output = false
+structured_output = true
+reasoning_options = []
 
 [cost]
 input = 0.05
 output = 0.2
 
 [limit]
-context = 262_144
 output = 228_000
